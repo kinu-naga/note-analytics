@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>note記事分析スプレッドシート</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+            color: #333;
+        }
+        
+        .header {
+            background: #fff;
+            border-bottom: 1px solid #e1e4e8;
+            padding: 12px 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 20px;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            background: #fff;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .btn:hover {
+            background: #f3f4f6;
+        }
+        
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+        
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+        
+        .tabs {
+            background: #fff;
+            border-bottom: 1px solid #e1e4e8;
+            padding: 0 20px;
+            display: flex;
+            gap: 0;
+        }
+        
+        .tab {
+            padding: 12px 20px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .tab.active {
+            border-bottom-color: #3b82f6;
+            color: #3b82f6;
+        }
+        
+        .tab:hover {
+            background: #f3f4f6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .sheet {
+            display: none;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .sheet.active {
+            display: block;
+        }
+        
+        .sheet-header {
+            padding: 16px 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e1e4e8;
+        }
+        
+        .sheet-header h2 {
+            font-size: 18px;
+            color: #1f2937;
+            margin-bottom: 4px;
+        }
+        
+        .sheet-header p {
+            color: #6b7280;
+            font-size: 14px;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px;
+        }
+        
+        th, td {
+            padding: 8px 12px;
+            text-align: left;
+            border: 1px solid #e1e4e8;
+            font-size: 14px;
+        }
+        
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        td input, td select {
+            width: 100%;
+            border: none;
+            padding: 4px;
+            font-size: 14px;
+            background: transparent;
+        }
+        
+        td input:focus, td select:focus {
+            outline: 2px solid #3b82f6;
+            background: #fff;
+        }
+        
+        .add-row-btn {
+            margin: 16px 20px;
+            padding: 8px 16px;
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .add-row-btn:hover {
+            background: #059669;
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .card {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .card h3 {
+            font-size: 16px;
+            margin-bottom: 16px;
+            color: #1f2937;
+        }
+        
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        
+        .metric:last-child {
+            border-bottom: none;
+        }
+        
+        .metric-value {
+            font-weight: 600;
+            color: #3b82f6;
+        }
+        
+        .chart-container {
+            grid-column: 1 / -1;
+            height: 400px;
+            position: relative;
+        }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 4px;
+            font-weight: 500;
+            color: #374151;
+        }
+        
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .positive {
+            color: #10b981;
+        }
+        
+        .negative {
+            color: #ef4444;
+        }
+        
+        .analysis-section {
+            margin-bottom: 30px;
+        }
+        
+        .article-selector {
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e1e4e8;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📊 note記事分析スプレッドシート</h1>
+        <div class="header-actions">
+            <button class="btn" onclick="exportToCSV()">📥 CSVエクスポート</button>
+            <button class="btn" onclick="importFromCSV()">📤 CSVインポート</button>
+            <button class="btn btn-primary" onclick="calculateAnalytics()">🔄 分析更新</button>
+        </div>
+    </div>
+    
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('master')">記事マスタ</div>
+        <div class="tab" onclick="switchTab('daily')">日次データ入力</div>
+        <div class="tab" onclick="switchTab('dashboard')">分析ダッシュボード</div>
+        <div class="tab" onclick="switchTab('individual')">個別記事分析</div>
+    </div>
+    
+    <div class="container">
+        <!-- 記事マスタシート -->
+        <div id="master" class="sheet active">
+            <div class="sheet-header">
+                <h2>📝 記事マスタ</h2>
+                <p>記事の基本情報を管理します。新しい記事を追加する際はここに登録してください。</p>
+            </div>
+            
+            <!-- カテゴリ管理セクション -->
+            <div style="background: #f8f9fa; padding: 16px 20px; border-bottom: 1px solid #e1e4e8;">
+                <h3 style="margin-bottom: 12px; font-size: 16px; color: #1f2937;">🏷️ カテゴリ管理</h3>
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <input type="text" id="newCategoryInput" placeholder="新しいカテゴリ名を入力" style="padding: 6px 12px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 14px;" onkeypress="if(event.key==='Enter') addCategory()">
+                    <button onclick="addCategory()" style="padding: 6px 12px; background: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">追加</button>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px;" id="categoryList">
+                    <!-- カテゴリタグがここに表示される -->
+                </div>
+            </div>
+            
+            <div class="table-container">
+                <table id="masterTable">
+                    <thead>
+                        <tr>
+                            <th>記事ID</th>
+                            <th>記事タイトル</th>
+                            <th>公開日</th>
+                            <th>カテゴリ</th>
+                            <th>URL</th>
+                            <th>状態</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><input type="text" value="A001" readonly></td>
+                            <td><input type="text" placeholder="記事タイトルを入力"></td>
+                            <td><input type="date"></td>
+                            <td>
+                                <select>
+                                    <option value="">選択してください</option>
+                                    <option value="ビジネス">ビジネス</option>
+                                    <option value="技術">技術</option>
+                                    <option value="ライフスタイル">ライフスタイル</option>
+                                    <option value="エンタメ">エンタメ</option>
+                                    <option value="その他">その他</option>
+                                </select>
+                            </td>
+                            <td><input type="url" placeholder="https://note.com/..."></td>
+                            <td>
+                                <select>
+                                    <option value="アクティブ">アクティブ</option>
+                                    <option value="非アクティブ">非アクティブ</option>
+                                </select>
+                            </td>
+                            <td><button onclick="deleteRow(this)" style="color: #ef4444;">削除</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <button class="add-row-btn" onclick="addMasterRow()">➕ 新しい記事を追加</button>
+        </div>
+        
+        <!-- 日次データ入力シート -->
+        <div id="daily" class="sheet">
+            <div class="sheet-header">
+                <h2>📊 日次データ入力</h2>
+                <p>毎日の記事パフォーマンスデータを入力します。前日比は自動計算されます。</p>
+            </div>
+            <div class="table-container">
+                <table id="dailyTable">
+                    <thead>
+                        <tr>
+                            <th>日付</th>
+                            <th>記事ID</th>
+                            <th>記事タイトル</th>
+                            <th>ビュー数</th>
+                            <th>コメント数</th>
+                            <th>スキ数</th>
+                            <th>前日比ビュー</th>
+                            <th>前日比コメント</th>
+                            <th>前日比スキ</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+            <button class="add-row-btn" onclick="addDailyRow()">➕ 今日のデータを追加</button>
+        </div>
+        
+        <!-- 分析ダッシュボード -->
+        <div id="dashboard" class="sheet">
+            <div class="sheet-header">
+                <h2>📈 分析ダッシュボード</h2>
+                <p>全記事の総合的なパフォーマンス分析を表示します。</p>
+            </div>
+            <div class="dashboard">
+                <div class="card">
+                    <h3>📊 全体サマリー</h3>
+                    <div id="summaryMetrics">
+                        <div class="metric">
+                            <span>総記事数</span>
+                            <span class="metric-value" id="totalArticles">0</span>
+                        </div>
+                        <div class="metric">
+                            <span>総ビュー数</span>
+                            <span class="metric-value" id="totalViews">0</span>
+                        </div>
+                        <div class="metric">
+                            <span>総コメント数</span>
+                            <span class="metric-value" id="totalComments">0</span>
+                        </div>
+                        <div class="metric">
+                            <span>総スキ数</span>
+                            <span class="metric-value" id="totalLikes">0</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>🏆 トップパフォーマンス記事</h3>
+                    <div id="topArticles">
+                        <div class="metric">
+                            <span>最高ビュー数記事</span>
+                            <span class="metric-value" id="topViewArticle">-</span>
+                        </div>
+                        <div class="metric">
+                            <span>最高コメント数記事</span>
+                            <span class="metric-value" id="topCommentArticle">-</span>
+                        </div>
+                        <div class="metric">
+                            <span>最高スキ数記事</span>
+                            <span class="metric-value" id="topLikeArticle">-</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card chart-container">
+                    <h3>📈 パフォーマンス推移</h3>
+                    <canvas id="performanceChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 個別記事分析 -->
+        <div id="individual" class="sheet">
+            <div class="article-selector">
+                <div class="form-group">
+                    <label for="articleSelect">分析する記事を選択:</label>
+                    <select id="articleSelect" onchange="updateIndividualAnalysis()">
+                        <option value="">記事を選択してください</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="dashboard">
+                <div class="card">
+                    <h3>📋 記事情報</h3>
+                    <div id="articleInfo">
+                        <div class="metric">
+                            <span>記事ID</span>
+                            <span class="metric-value" id="selectedArticleId">-</span>
+                        </div>
+                        <div class="metric">
+                            <span>記事タイトル</span>
+                            <span class="metric-value" id="selectedArticleTitle">-</span>
+                        </div>
+                        <div class="metric">
+                            <span>カテゴリ</span>
+                            <span class="metric-value" id="selectedArticleCategory">-</span>
+                        </div>
+                        <div class="metric">
+                            <span>公開日</span>
+                            <span class="metric-value" id="selectedArticleDate">-</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>📊 最新パフォーマンス</h3>
+                    <div id="latestPerformance">
+                        <div class="metric">
+                            <span>最新ビュー数</span>
+                            <span class="metric-value" id="latestViews">-</span>
+                        </div>
+                        <div class="metric">
+                            <span>最新コメント数</span>
+                            <span class="metric-value" id="latestComments">-</span>
+                        </div>
+                        <div class="metric">
+                            <span>最新スキ数</span>
+                            <span class="metric-value" id="latestLikes">-</span>
+                        </div>
+                        <div class="metric">
+                            <span>7日間平均成長率</span>
+                            <span class="metric-value" id="avgGrowthRate">-</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card chart-container">
+                    <h3>📈 個別記事推移</h3>
+                    <canvas id="individualChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // データストレージ
+        let masterData = [];
+        let dailyData = [];
+        let charts = {};
+        let categories = ['開催案内', '観光案内', 'MIF説明', '学校案内'];
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeData();
+            updateCategoryList();
+            calculateAnalytics();
+        });
+
+        function initializeData() {
+            // サンプルデータ
+            masterData = [
+                {
+                    id: 'A001',
+                    title: '夏祭り開催のお知らせ',
+                    publishDate: '2024-01-15',
+                    category: '開催案内',
+                    url: 'https://note.com/sample1',
+                    status: 'アクティブ'
+                }
+            ];
+
+            // サンプル日次データ
+            const today = new Date();
+            for (let i = 7; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - i);
+                dailyData.push({
+                    date: date.toISOString().split('T')[0],
+                    articleId: 'A001',
+                    views: 1000 + Math.floor(Math.random() * 500),
+                    comments: 10 + Math.floor(Math.random() * 20),
+                    likes: 50 + Math.floor(Math.random() * 100)
+                });
+            }
+
+            updateMasterTable();
+            updateDailyTable();
+            updateArticleSelect();
+        }
+
+        function addCategory() {
+            const input = document.getElementById('newCategoryInput');
+            const newCategory = input.value.trim();
+            
+            if (newCategory && !categories.includes(newCategory)) {
+                categories.push(newCategory);
+                input.value = '';
+                updateCategoryList();
+                updateMasterTable();
+                alert(`カテゴリ「${newCategory}」を追加しました。`);
+            } else if (categories.includes(newCategory)) {
+                alert('このカテゴリは既に存在します。');
+            } else {
+                alert('カテゴリ名を入力してください。');
+            }
+        }
+
+        function deleteCategory(categoryName) {
+            if (confirm(`カテゴリ「${categoryName}」を削除しますか？\nこのカテゴリを使用している記事のカテゴリは空になります。`)) {
+                // カテゴリを削除
+                categories = categories.filter(cat => cat !== categoryName);
+                
+                // 該当カテゴリを使用している記事のカテゴリをクリア
+                masterData.forEach(article => {
+                    if (article.category === categoryName) {
+                        article.category = '';
+                    }
+                });
+                
+                updateCategoryList();
+                updateMasterTable();
+            }
+        }
+
+        function updateCategoryList() {
+            const categoryList = document.getElementById('categoryList');
+            categoryList.innerHTML = '';
+            
+            categories.forEach(category => {
+                const tag = document.createElement('span');
+                tag.style.cssText = `
+                    background: #e0e7ff; 
+                    color: #3730a3; 
+                    padding: 4px 8px; 
+                    border-radius: 4px; 
+                    font-size: 12px; 
+                    display: inline-flex; 
+                    align-items: center; 
+                    gap: 6px;
+                `;
+                tag.innerHTML = `
+                    ${category}
+                    <button onclick="deleteCategory('${category}')" style="
+                        background: none; 
+                        border: none; 
+                        color: #dc2626; 
+                        cursor: pointer; 
+                        font-size: 12px; 
+                        padding: 0; 
+                        width: 16px; 
+                        height: 16px;
+                        border-radius: 50%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    ">×</button>
+                `;
+                categoryList.appendChild(tag);
+            });
+        }
+
+        function switchTab(tabName) {
+            // タブの切り替え
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.sheet').forEach(sheet => sheet.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+
+            // ダッシュボードを開いた時に分析を更新
+            if (tabName === 'dashboard') {
+                setTimeout(() => calculateAnalytics(), 100);
+            }
+        }
+
+        function addMasterRow() {
+            const newId = 'A' + String(masterData.length + 1).padStart(3, '0');
+            masterData.push({
+                id: newId,
+                title: '',
+                publishDate: '',
+                category: '',
+                url: '',
+                status: 'アクティブ'
+            });
+            updateMasterTable();
+            updateArticleSelect();
+        }
+
+        function updateMasterTable() {
+            const tbody = document.querySelector('#masterTable tbody');
+            tbody.innerHTML = '';
+
+            masterData.forEach((article, index) => {
+                const categoryOptions = categories.map(category => 
+                    `<option value="${category}" ${article.category === category ? 'selected' : ''}>${category}</option>`
+                ).join('');
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><input type="text" value="${article.id}" readonly></td>
+                    <td><input type="text" value="${article.title}" onchange="updateMasterData(${index}, 'title', this.value)"></td>
+                    <td><input type="date" value="${article.publishDate}" onchange="updateMasterData(${index}, 'publishDate', this.value)"></td>
+                    <td>
+                        <select onchange="updateMasterData(${index}, 'category', this.value)">
+                            <option value="">選択してください</option>
+                            ${categoryOptions}
+                        </select>
+                    </td>
+                    <td><input type="url" value="${article.url}" onchange="updateMasterData(${index}, 'url', this.value)"></td>
+                    <td>
+                        <select onchange="updateMasterData(${index}, 'status', this.value)">
+                            <option value="アクティブ" ${article.status === 'アクティブ' ? 'selected' : ''}>アクティブ</option>
+                            <option value="非アクティブ" ${article.status === '非アクティブ' ? 'selected' : ''}>非アクティブ</option>
+                        </select>
+                    </td>
+                    <td><button onclick="deleteMasterRow(${index})" style="color: #ef4444;">削除</button></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function updateMasterData(index, field, value) {
+            masterData[index][field] = value;
+            updateArticleSelect();
+        }
+
+        function deleteMasterRow(index) {
+            if (confirm('この記事を削除しますか？関連する日次データも削除されます。')) {
+                const articleId = masterData[index].id;
+                masterData.splice(index, 1);
+                dailyData = dailyData.filter(data => data.articleId !== articleId);
+                updateMasterTable();
+                updateDailyTable();
+                updateArticleSelect();
+            }
+        }
+
+        function addDailyRow() {
+            const today = new Date().toISOString().split('T')[0];
+            dailyData.push({
+                date: today,
+                articleId: '',
+                views: 0,
+                comments: 0,
+                likes: 0
+            });
+            updateDailyTable();
+        }
+
+        function updateDailyTable() {
+            const tbody = document.querySelector('#dailyTable tbody');
+            tbody.innerHTML = '';
+
+            dailyData.forEach((data, index) => {
+                const article = masterData.find(a => a.id === data.articleId);
+                const articleTitle = article ? article.title : '';
+                
+                // 前日比計算
+                const prevData = dailyData.find(d => 
+                    d.articleId === data.articleId && 
+                    d.date === getPreviousDate(data.date)
+                );
+                
+                const viewsDiff = prevData ? data.views - prevData.views : 0;
+                const commentsDiff = prevData ? data.comments - prevData.comments : 0;
+                const likesDiff = prevData ? data.likes - prevData.likes : 0;
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><input type="date" value="${data.date}" onchange="updateDailyData(${index}, 'date', this.value)"></td>
+                    <td>
+                        <select onchange="updateDailyData(${index}, 'articleId', this.value)">
+                            <option value="">選択してください</option>
+                            ${masterData.map(article => 
+                                `<option value="${article.id}" ${data.articleId === article.id ? 'selected' : ''}>${article.id}</option>`
+                            ).join('')}
+                        </select>
+                    </td>
+                    <td>${articleTitle}</td>
+                    <td><input type="number" value="${data.views}" onchange="updateDailyData(${index}, 'views', this.value)"></td>
+                    <td><input type="number" value="${data.comments}" onchange="updateDailyData(${index}, 'comments', this.value)"></td>
+                    <td><input type="number" value="${data.likes}" onchange="updateDailyData(${index}, 'likes', this.value)"></td>
+                    <td class="${viewsDiff >= 0 ? 'positive' : 'negative'}">${viewsDiff >= 0 ? '+' : ''}${viewsDiff}</td>
+                    <td class="${commentsDiff >= 0 ? 'positive' : 'negative'}">${commentsDiff >= 0 ? '+' : ''}${commentsDiff}</td>
+                    <td class="${likesDiff >= 0 ? 'positive' : 'negative'}">${likesDiff >= 0 ? '+' : ''}${likesDiff}</td>
+                    <td><button onclick="deleteDailyRow(${index})" style="color: #ef4444;">削除</button></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function updateDailyData(index, field, value) {
+            dailyData[index][field] = field === 'date' ? value : parseInt(value) || 0;
+            updateDailyTable();
+        }
+
+        function deleteDailyRow(index) {
+            dailyData.splice(index, 1);
+            updateDailyTable();
+        }
+
+        function getPreviousDate(dateString) {
+            const date = new Date(dateString);
+            date.setDate(date.getDate() - 1);
+            return date.toISOString().split('T')[0];
+        }
+
+        function updateArticleSelect() {
+            const select = document.getElementById('articleSelect');
+            select.innerHTML = '<option value="">記事を選択してください</option>';
+            
+            masterData.forEach(article => {
+                const option = document.createElement('option');
+                option.value = article.id;
+                option.textContent = `${article.id} - ${article.title}`;
+                select.appendChild(option);
+            });
+        }
+
+        function calculateAnalytics() {
+            // 全体サマリー計算
+            const totalArticles = masterData.length;
+            let totalViews = 0, totalComments = 0, totalLikes = 0;
+            
+            // 最新データを取得
+            const latestDate = Math.max(...dailyData.map(d => new Date(d.date)));
+            const latestData = dailyData.filter(d => new Date(d.date).getTime() === latestDate);
+            
+            latestData.forEach(data => {
+                totalViews += data.views;
+                totalComments += data.comments;
+                totalLikes += data.likes;
+            });
+
+            // DOM更新
+            document.getElementById('totalArticles').textContent = totalArticles;
+            document.getElementById('totalViews').textContent = totalViews.toLocaleString();
+            document.getElementById('totalComments').textContent = totalComments.toLocaleString();
+            document.getElementById('totalLikes').textContent = totalLikes.toLocaleString();
+
+            // トップ記事計算
+            let topViewArticle = null, topCommentArticle = null, topLikeArticle = null;
+            let maxViews = 0, maxComments = 0, maxLikes = 0;
+
+            latestData.forEach(data => {
+                const article = masterData.find(a => a.id === data.articleId);
+                if (article) {
+                    if (data.views > maxViews) {
+                        maxViews = data.views;
+                        topViewArticle = article.title;
+                    }
+                    if (data.comments > maxComments) {
+                        maxComments = data.comments;
+                        topCommentArticle = article.title;
+                    }
+                    if (data.likes > maxLikes) {
+                        maxLikes = data.likes;
+                        topLikeArticle = article.title;
+                    }
+                }
+            });
+
+            document.getElementById('topViewArticle').textContent = topViewArticle || '-';
+            document.getElementById('topCommentArticle').textContent = topCommentArticle || '-';
+            document.getElementById('topLikeArticle').textContent = topLikeArticle || '-';
+
+            // チャート更新
+            updatePerformanceChart();
+        }
+
+        function updatePerformanceChart() {
+            const ctx = document.getElementById('performanceChart').getContext('2d');
+            
+            // 日付別データを集計
+            const dateGroups = {};
+            dailyData.forEach(data => {
+                if (!dateGroups[data.date]) {
+                    dateGroups[data.date] = { views: 0, comments: 0, likes: 0 };
+                }
+                dateGroups[data.date].views += data.views;
+                dateGroups[data.date].comments += data.comments;
+                dateGroups[data.date].likes += data.likes;
+            });
+
+            const sortedDates = Object.keys(dateGroups).sort();
+            const viewsData = sortedDates.map(date => dateGroups[date].views);
+            const commentsData = sortedDates.map(date => dateGroups[date].comments);
+            const likesData = sortedDates.map(date => dateGroups[date].likes);
+
+            if (charts.performance) {
+                charts.performance.destroy();
+            }
+
+            charts.performance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: sortedDates,
+                    datasets: [
+                        {
+                            label: 'ビュー数',
+                            data: viewsData,
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'コメント数',
+                            data: commentsData,
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            yAxisID: 'y1'
+                        },
+                        {
+                            label: 'スキ数',
+                            data: likesData,
+                            borderColor: '#f59e0b',
+                            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateIndividualAnalysis() {
+            const selectedId = document.getElementById('articleSelect').value;
+            if (!selectedId) return;
+
+            const article = masterData.find(a => a.id === selectedId);
+            const articleData = dailyData.filter(d => d.articleId === selectedId);
+
+            if (article) {
+                document.getElementById('selectedArticleId').textContent = article.id;
+                document.getElementById('selectedArticleTitle').textContent = article.title;
+                document.getElementById('selectedArticleCategory').textContent = article.category;
+                document.getElementById('selectedArticleDate').textContent = article.publishDate;
+            }
+
+            if (articleData.length > 0) {
+                const latest = articleData[articleData.length - 1];
+                document.getElementById('latestViews').textContent = latest.views.toLocaleString();
+                document.getElementById('latestComments').textContent = latest.comments.toLocaleString();
+                document.getElementById('latestLikes').textContent = latest.likes.toLocaleString();
+
+                // 7日間平均成長率計算
+                if (articleData.length >= 7) {
+                    const last7Days = articleData.slice(-7);
+                    const growthRates = [];
+                    for (let i = 1; i < last7Days.length; i++) {
+                        const prev = last7Days[i-1];
+                        const curr = last7Days[i];
+                        if (prev.views > 0) {
+                            growthRates.push((curr.views - prev.views) / prev.views * 100);
+                        }
+                    }
+                    const avgGrowth = growthRates.length > 0 ? 
+                        growthRates.reduce((a, b) => a + b, 0) / growthRates.length : 0;
+                    document.getElementById('avgGrowthRate').textContent = 
+                        `${avgGrowth.toFixed(2)}%`;
+                }
+            }
+
+            updateIndividualChart(selectedId);
+        }
+
+        function updateIndividualChart(articleId) {
+            const ctx = document.getElementById('individualChart').getContext('2d');
+            const articleData = dailyData.filter(d => d.articleId === articleId).sort((a, b) => 
+                new Date(a.date) - new Date(b.date)
+            );
+
+            if (charts.individual) {
+                charts.individual.destroy();
+            }
+
+            charts.individual = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: articleData.map(d => d.date),
+                    datasets: [
+                        {
+                            label: 'ビュー数',
+                            data: articleData.map(d => d.views),
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        },
+                        {
+                            label: 'コメント数',
+                            data: articleData.map(d => d.comments),
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        },
+                        {
+                            label: 'スキ数',
+                            data: articleData.map(d => d.likes),
+                            borderColor: '#f59e0b',
+                            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                }
+            });
+        }
+
+        function exportToCSV() {
+            // マスタデータをCSV形式で出力
+            let csv = 'データ種別,記事ID,記事タイトル,公開日,カテゴリ,URL,状態,日付,ビュー数,コメント数,スキ数\n';
+            
+            masterData.forEach(article => {
+                csv += `マスタ,${article.id},"${article.title}",${article.publishDate},${article.category},"${article.url}",${article.status},,,,\n`;
+            });
+
+            dailyData.forEach(data => {
+                const article = masterData.find(a => a.id === data.articleId);
+                csv += `日次,${data.articleId},"${article ? article.title : ''}",,,,,${data.date},${data.views},${data.comments},${data.likes}\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `note分析データ_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+        }
+
+        function importFromCSV() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.csv';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        // CSVパース処理（簡易版）
+                        alert('CSV インポート機能は実装中です。現在は手動入力をご利用ください。');
+                    };
+                    reader.readAsText(file);
+                }
+            };
+            input.click();
+        }
+    </script>
+</body>
+</html>
