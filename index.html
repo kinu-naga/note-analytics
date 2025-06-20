@@ -137,6 +137,11 @@
             text-align: left;
             border: 1px solid #e1e4e8;
             font-size: 14px;
+            min-width: 100px;
+        }
+        
+        th:nth-child(5), td:nth-child(5) {
+            min-width: 200px; /* ハッシュタグ列を広く */
         }
         
         th {
@@ -254,6 +259,100 @@
             background: #f8f9fa;
             border-bottom: 1px solid #e1e4e8;
         }
+        
+        .tag-input-container {
+            position: relative;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            padding: 4px;
+            min-height: 40px;
+            background: #fff;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .tag-chip {
+            background: #3b82f6;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .tag-chip .remove-tag {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 12px;
+            padding: 0;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .tag-chip .remove-tag:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .tag-input {
+            border: none;
+            outline: none;
+            flex: 1;
+            min-width: 120px;
+            padding: 8px;
+            font-size: 14px;
+        }
+        
+        .tag-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-top: none;
+            border-radius: 0 0 6px 6px;
+            max-height: 150px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+        
+        .tag-suggestion {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        
+        .tag-suggestion:hover {
+            background: #f3f4f6;
+        }
+        
+        .tag-cloud-item {
+            display: inline-block;
+            margin: 4px;
+            padding: 6px 12px;
+            background: #e0e7ff;
+            color: #3730a3;
+            border-radius: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .tag-cloud-item:hover {
+            background: #c7d2fe;
+            transform: scale(1.05);
+        }
     </style>
 </head>
 <body>
@@ -270,6 +369,7 @@
         <div class="tab active" onclick="switchTab('master')">記事マスタ</div>
         <div class="tab" onclick="switchTab('daily')">日次データ入力</div>
         <div class="tab" onclick="switchTab('dashboard')">分析ダッシュボード</div>
+        <div class="tab" onclick="switchTab('tags')">タグ分析</div>
         <div class="tab" onclick="switchTab('individual')">個別記事分析</div>
     </div>
     
@@ -301,6 +401,7 @@
                             <th>記事タイトル</th>
                             <th>公開日</th>
                             <th>カテゴリ</th>
+                            <th>ハッシュタグ</th>
                             <th>URL</th>
                             <th>状態</th>
                             <th>操作</th>
@@ -419,6 +520,72 @@
             </div>
         </div>
         
+        <!-- タグ分析 -->
+        <div id="tags" class="sheet">
+            <div class="sheet-header">
+                <h2>🏷️ タグ分析</h2>
+                <p>ハッシュタグ別のパフォーマンス分析を表示します。</p>
+            </div>
+            <div class="dashboard">
+                <div class="card">
+                    <h3>📊 タグ使用状況</h3>
+                    <div id="tagUsageMetrics">
+                        <div class="metric">
+                            <span>総タグ数</span>
+                            <span class="metric-value" id="totalTags">0</span>
+                        </div>
+                        <div class="metric">
+                            <span>使用中タグ数</span>
+                            <span class="metric-value" id="activeTags">0</span>
+                        </div>
+                        <div class="metric">
+                            <span>平均タグ数/記事</span>
+                            <span class="metric-value" id="avgTagsPerArticle">0</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>🏆 人気タグランキング</h3>
+                    <div id="topTags">
+                        <div class="metric">
+                            <span>最多使用タグ</span>
+                            <span class="metric-value" id="mostUsedTag">-</span>
+                        </div>
+                        <div class="metric">
+                            <span>最高パフォーマンスタグ</span>
+                            <span class="metric-value" id="bestPerformingTag">-</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>📈 タグ別平均パフォーマンス</h3>
+                    <div style="max-height: 300px; overflow-y: auto;">
+                        <table id="tagPerformanceTable" style="width: 100%; font-size: 12px;">
+                            <thead>
+                                <tr style="position: sticky; top: 0; background: #f8f9fa;">
+                                    <th style="padding: 8px; border: 1px solid #e1e4e8;">タグ</th>
+                                    <th style="padding: 8px; border: 1px solid #e1e4e8;">使用回数</th>
+                                    <th style="padding: 8px; border: 1px solid #e1e4e8;">平均ビュー</th>
+                                    <th style="padding: 8px; border: 1px solid #e1e4e8;">平均コメント</th>
+                                    <th style="padding: 8px; border: 1px solid #e1e4e8;">平均スキ</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="card chart-container">
+                    <h3>☁️ タグクラウド</h3>
+                    <div id="tagCloud" style="padding: 20px; text-align: center; line-height: 2;">
+                        <!-- タグクラウドがここに表示される -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         <!-- 個別記事分析 -->
         <div id="individual" class="sheet">
             <div class="article-selector">
@@ -489,12 +656,14 @@
         let dailyData = [];
         let charts = {};
         let categories = ['開催案内', '観光案内', 'MIF説明', '学校案内'];
+        let allTags = new Set(); // 全タグの管理
 
         // 初期化
         document.addEventListener('DOMContentLoaded', function() {
             initializeData();
             updateCategoryList();
             calculateAnalytics();
+            updateTagAnalytics();
         });
 
         function initializeData() {
@@ -505,6 +674,7 @@
                     title: '夏祭り開催のお知らせ',
                     publishDate: '2024-01-15',
                     category: '開催案内',
+                    tags: ['#夏祭り', '#MIF2024', '#名古屋'],
                     url: 'https://note.com/sample1',
                     status: 'アクティブ'
                 }
@@ -527,6 +697,7 @@
             updateMasterTable();
             updateDailyTable();
             updateArticleSelect();
+            updateAllTags();
         }
 
         function addCategory() {
@@ -600,6 +771,212 @@
             });
         }
 
+        // タグ管理関数
+        function handleTagInput(event, index) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                const input = event.target;
+                let tagValue = input.value.trim();
+                
+                if (tagValue) {
+                    // #を自動追加
+                    if (!tagValue.startsWith('#')) {
+                        tagValue = '#' + tagValue;
+                    }
+                    
+                    if (!masterData[index].tags) {
+                        masterData[index].tags = [];
+                    }
+                    
+                    if (!masterData[index].tags.includes(tagValue)) {
+                        masterData[index].tags.push(tagValue);
+                        input.value = '';
+                        updateMasterTable();
+                        updateAllTags();
+                    }
+                }
+            }
+        }
+
+        function removeTag(index, tag) {
+            if (masterData[index].tags) {
+                masterData[index].tags = masterData[index].tags.filter(t => t !== tag);
+                updateMasterTable();
+                updateAllTags();
+            }
+        }
+
+        function showTagSuggestions(index) {
+            const suggestions = document.getElementById(`suggestions${index}`);
+            const existingTags = Array.from(allTags).filter(tag => 
+                !masterData[index].tags.includes(tag)
+            );
+            
+            if (existingTags.length > 0) {
+                suggestions.innerHTML = existingTags.slice(0, 5).map(tag => 
+                    `<div class="tag-suggestion" onclick="addSuggestedTag(${index}, '${tag}')">${tag}</div>`
+                ).join('');
+                suggestions.style.display = 'block';
+            }
+        }
+
+        function hideTagSuggestions(index) {
+            setTimeout(() => {
+                const suggestions = document.getElementById(`suggestions${index}`);
+                if (suggestions) {
+                    suggestions.style.display = 'none';
+                }
+            }, 200);
+        }
+
+        function addSuggestedTag(index, tag) {
+            if (!masterData[index].tags) {
+                masterData[index].tags = [];
+            }
+            
+            if (!masterData[index].tags.includes(tag)) {
+                masterData[index].tags.push(tag);
+                updateMasterTable();
+                updateAllTags();
+            }
+        }
+
+        function updateAllTags() {
+            allTags.clear();
+            masterData.forEach(article => {
+                if (article.tags) {
+                    article.tags.forEach(tag => allTags.add(tag));
+                }
+            });
+        }
+
+        function calculateTagAnalytics() {
+            const tagStats = new Map();
+            
+            // 各タグの使用回数と記事IDを記録
+            masterData.forEach(article => {
+                if (article.tags) {
+                    article.tags.forEach(tag => {
+                        if (!tagStats.has(tag)) {
+                            tagStats.set(tag, {
+                                count: 0,
+                                articles: [],
+                                totalViews: 0,
+                                totalComments: 0,
+                                totalLikes: 0
+                            });
+                        }
+                        tagStats.get(tag).count++;
+                        tagStats.get(tag).articles.push(article.id);
+                    });
+                }
+            });
+
+            // 最新パフォーマンスデータを集計
+            const latestDate = Math.max(...dailyData.map(d => new Date(d.date)));
+            const latestData = dailyData.filter(d => new Date(d.date).getTime() === latestDate);
+
+            tagStats.forEach((stats, tag) => {
+                stats.articles.forEach(articleId => {
+                    const data = latestData.find(d => d.articleId === articleId);
+                    if (data) {
+                        stats.totalViews += data.views;
+                        stats.totalComments += data.comments;
+                        stats.totalLikes += data.likes;
+                    }
+                });
+            });
+
+            return tagStats;
+        }
+
+        function updateTagAnalytics() {
+            const tagStats = calculateTagAnalytics();
+            
+            // 基本統計更新
+            document.getElementById('totalTags').textContent = allTags.size;
+            document.getElementById('activeTags').textContent = tagStats.size;
+            
+            const avgTagsPerArticle = masterData.length > 0 ? 
+                (masterData.reduce((sum, article) => sum + (article.tags ? article.tags.length : 0), 0) / masterData.length).toFixed(1) : 0;
+            document.getElementById('avgTagsPerArticle').textContent = avgTagsPerArticle;
+
+            // 人気タグとベストパフォーマンスタグ
+            let mostUsedTag = '';
+            let bestPerformingTag = '';
+            let maxCount = 0;
+            let maxAvgViews = 0;
+
+            tagStats.forEach((stats, tag) => {
+                if (stats.count > maxCount) {
+                    maxCount = stats.count;
+                    mostUsedTag = tag;
+                }
+                
+                const avgViews = stats.count > 0 ? stats.totalViews / stats.count : 0;
+                if (avgViews > maxAvgViews) {
+                    maxAvgViews = avgViews;
+                    bestPerformingTag = tag;
+                }
+            });
+
+            document.getElementById('mostUsedTag').textContent = mostUsedTag || '-';
+            document.getElementById('bestPerformingTag').textContent = bestPerformingTag || '-';
+
+            // タグパフォーマンステーブル更新
+            updateTagPerformanceTable(tagStats);
+            
+            // タグクラウド更新
+            updateTagCloud(tagStats);
+        }
+
+        function updateTagPerformanceTable(tagStats) {
+            const tbody = document.querySelector('#tagPerformanceTable tbody');
+            tbody.innerHTML = '';
+
+            const sortedTags = Array.from(tagStats.entries()).sort((a, b) => b[1].count - a[1].count);
+
+            sortedTags.forEach(([tag, stats]) => {
+                const avgViews = stats.count > 0 ? Math.round(stats.totalViews / stats.count) : 0;
+                const avgComments = stats.count > 0 ? Math.round(stats.totalComments / stats.count) : 0;
+                const avgLikes = stats.count > 0 ? Math.round(stats.totalLikes / stats.count) : 0;
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td style="padding: 6px; border: 1px solid #e1e4e8;">${tag}</td>
+                    <td style="padding: 6px; border: 1px solid #e1e4e8;">${stats.count}</td>
+                    <td style="padding: 6px; border: 1px solid #e1e4e8;">${avgViews.toLocaleString()}</td>
+                    <td style="padding: 6px; border: 1px solid #e1e4e8;">${avgComments}</td>
+                    <td style="padding: 6px; border: 1px solid #e1e4e8;">${avgLikes}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function updateTagCloud(tagStats) {
+            const tagCloud = document.getElementById('tagCloud');
+            tagCloud.innerHTML = '';
+
+            if (tagStats.size === 0) {
+                tagCloud.innerHTML = '<p style="color: #6b7280;">タグが登録されていません</p>';
+                return;
+            }
+
+            const maxCount = Math.max(...Array.from(tagStats.values()).map(s => s.count));
+            
+            Array.from(tagStats.entries())
+                .sort((a, b) => b[1].count - a[1].count)
+                .forEach(([tag, stats]) => {
+                    const size = 12 + (stats.count / maxCount) * 12; // 12px-24px
+                    const span = document.createElement('span');
+                    span.className = 'tag-cloud-item';
+                    span.style.fontSize = `${size}px`;
+                    span.textContent = tag;
+                    span.title = `使用回数: ${stats.count}, 平均ビュー: ${Math.round(stats.totalViews / stats.count)}`;
+                    tagCloud.appendChild(span);
+                });
+        }
+
         function switchTab(tabName) {
             // タブの切り替え
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
@@ -608,9 +985,11 @@
             event.target.classList.add('active');
             document.getElementById(tabName).classList.add('active');
 
-            // ダッシュボードを開いた時に分析を更新
+            // 各タブを開いた時に分析を更新
             if (tabName === 'dashboard') {
                 setTimeout(() => calculateAnalytics(), 100);
+            } else if (tabName === 'tags') {
+                setTimeout(() => updateTagAnalytics(), 100);
             }
         }
 
@@ -621,6 +1000,7 @@
                 title: '',
                 publishDate: '',
                 category: '',
+                tags: [],
                 url: '',
                 status: 'アクティブ'
             });
@@ -647,6 +1027,18 @@
                             <option value="">選択してください</option>
                             ${categoryOptions}
                         </select>
+                    </td>
+                    <td>
+                        <div class="tag-input-container" id="tagContainer${index}">
+                            ${(article.tags || []).map(tag => 
+                                `<span class="tag-chip">${tag}<button class="remove-tag" onclick="removeTag(${index}, '${tag}')">×</button></span>`
+                            ).join('')}
+                            <input type="text" class="tag-input" placeholder="タグを入力..." 
+                                   onkeypress="handleTagInput(event, ${index})" 
+                                   onfocus="showTagSuggestions(${index})"
+                                   onblur="hideTagSuggestions(${index})">
+                            <div class="tag-suggestions" id="suggestions${index}"></div>
+                        </div>
                     </td>
                     <td><input type="url" value="${article.url}" onchange="updateMasterData(${index}, 'url', this.value)"></td>
                     <td>
@@ -808,6 +1200,9 @@
 
             // チャート更新
             updatePerformanceChart();
+            
+            // タグ分析も更新
+            updateTagAnalytics();
         }
 
         function updatePerformanceChart() {
