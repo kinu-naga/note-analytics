@@ -1099,18 +1099,21 @@
                 const commentsDiff = prevData ? data.comments - prevData.comments : 0;
                 const likesDiff = prevData ? data.likes - prevData.likes : 0;
 
+                // 記事IDの選択オプションを生成
+                const articleOptions = masterData.map(article => 
+                    `<option value="${article.id}" ${data.articleId === article.id ? 'selected' : ''}>${article.id}</option>`
+                ).join('');
+
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td><input type="date" value="${data.date}" onchange="updateDailyData(${index}, 'date', this.value)"></td>
                     <td>
                         <select onchange="updateDailyData(${index}, 'articleId', this.value)">
                             <option value="">選択してください</option>
-                            ${masterData.map(article => 
-                                `<option value="${article.id}" ${data.articleId === article.id ? 'selected' : ''}>${article.id}</option>`
-                            ).join('')}
+                            ${articleOptions}
                         </select>
                     </td>
-                    <td>${articleTitle}</td>
+                    <td style="background: #f8f9fa; font-weight: 500;">${articleTitle}</td>
                     <td><input type="number" value="${data.views}" onchange="updateDailyData(${index}, 'views', this.value)"></td>
                     <td><input type="number" value="${data.comments}" onchange="updateDailyData(${index}, 'comments', this.value)"></td>
                     <td><input type="number" value="${data.likes}" onchange="updateDailyData(${index}, 'likes', this.value)"></td>
@@ -1124,8 +1127,19 @@
         }
 
         function updateDailyData(index, field, value) {
-            dailyData[index][field] = field === 'date' ? value : parseInt(value) || 0;
-            updateDailyTable();
+            dailyData[index][field] = field === 'date' ? value : (field === 'articleId' ? value : parseInt(value) || 0);
+            
+            // 記事IDが変更された場合は、該当行の記事タイトルを更新
+            if (field === 'articleId') {
+                const article = masterData.find(a => a.id === value);
+                const titleCell = document.querySelector(`#dailyTable tbody tr:nth-child(${index + 1}) td:nth-child(3)`);
+                if (titleCell) {
+                    titleCell.textContent = article ? article.title : '';
+                }
+            } else {
+                // その他の変更の場合は前日比を再計算
+                updateDailyTable();
+            }
         }
 
         function deleteDailyRow(index) {
