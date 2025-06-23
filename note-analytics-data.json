@@ -12,6 +12,15 @@
       ],
       "url": "https://note.com/sample1",
       "status": "アクティブ"
+    },
+    {
+      "id": "A002",
+      "title": "",
+      "publishDate": "",
+      "category": "",
+      "tags": [],
+      "url": "",
+      "status": "アクティブ"
     }
   ],
   "dailyData": [
@@ -83,6 +92,6 @@
     "#MIF2024",
     "#名古屋"
   ],
-  "lastUpdated": "2025-06-23T00:12:47.800Z",
+  "lastUpdated": "2025-06-23T00:12:53.837Z",
   "version": "1.0"
 }
