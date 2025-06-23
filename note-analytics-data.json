@@ -69,6 +69,13 @@
       "views": 0,
       "comments": 0,
       "likes": 0
+    },
+    {
+      "date": "2025-06-23",
+      "articleId": "",
+      "views": 0,
+      "comments": 0,
+      "likes": 0
     }
   ],
   "categories": [
@@ -82,6 +89,6 @@
     "#冬休み",
     "#タグ３"
   ],
-  "lastUpdated": "2025-06-23T00:36:25.861Z",
+  "lastUpdated": "2025-06-23T00:36:27.503Z",
   "version": "1.0"
 }
