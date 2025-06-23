@@ -23,7 +23,9 @@
       "title": "ガイド～東京・大阪からのモデルコース～",
       "publishDate": "2025-06-18",
       "category": "観光案内",
-      "tags": [],
+      "tags": [
+        "#観光"
+      ],
       "url": "https://note.com/susaki250825/n/n865ea4943ca8",
       "status": "アクティブ"
     }
@@ -78,7 +80,9 @@
     "MIF説明",
     "学校案内"
   ],
-  "allTags": [],
-  "lastUpdated": "2025-06-23T00:55:18.121Z",
+  "allTags": [
+    "#観光"
+  ],
+  "lastUpdated": "2025-06-23T00:55:58.776Z",
   "version": "1.0"
 }
