@@ -8,6 +8,15 @@
       "tags": [],
       "url": "",
       "status": "アクティブ"
+    },
+    {
+      "id": "A002",
+      "title": "",
+      "publishDate": "",
+      "category": "",
+      "tags": [],
+      "url": "",
+      "status": "アクティブ"
     }
   ],
   "dailyData": [],
@@ -18,6 +27,6 @@
     "学校案内"
   ],
   "allTags": [],
-  "lastUpdated": "2025-06-23T00:34:43.491Z",
+  "lastUpdated": "2025-06-23T00:34:47.970Z",
   "version": "1.0"
 }
