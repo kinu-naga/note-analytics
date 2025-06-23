@@ -21,6 +21,15 @@
       "tags": [],
       "url": "",
       "status": "アクティブ"
+    },
+    {
+      "id": "A003",
+      "title": "",
+      "publishDate": "",
+      "category": "",
+      "tags": [],
+      "url": "",
+      "status": "アクティブ"
     }
   ],
   "dailyData": [
@@ -92,6 +101,6 @@
     "#MIF2024",
     "#名古屋"
   ],
-  "lastUpdated": "2025-06-23T00:02:03.200Z",
+  "lastUpdated": "2025-06-23T00:03:32.738Z",
   "version": "1.0"
 }
