@@ -34,7 +34,15 @@
       "status": "アクティブ"
     }
   ],
-  "dailyData": [],
+  "dailyData": [
+    {
+      "date": "2025-06-23",
+      "articleId": "",
+      "views": 0,
+      "comments": 0,
+      "likes": 0
+    }
+  ],
   "categories": [
     "開催案内",
     "観光案内",
@@ -46,6 +54,6 @@
     "#冬休み",
     "#タグ３"
   ],
-  "lastUpdated": "2025-06-23T00:35:25.995Z",
+  "lastUpdated": "2025-06-23T00:35:31.025Z",
   "version": "1.0"
 }
