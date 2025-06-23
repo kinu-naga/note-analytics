@@ -369,7 +369,7 @@
         <div class="header-actions">
             <button class="btn" onclick="setupGitHubIntegration()">⚙️ GitHub連携設定</button>
             <button class="btn" onclick="forceSaveToGitHub()">💾 手動保存</button>
-            <button class="btn" onclick="loadFromGitHub()">☁️ GitHubから読み込み</button>
+            <button class="btn" onclick="forceLoadFromGitHub()">🔄 強制読み込み</button>
             <button class="btn" onclick="showDebugInfo()">🔧 デバッグ情報</button>
             <button class="btn" onclick="exportToCSV()">📥 CSVエクスポート</button>
             <button class="btn btn-primary" onclick="calculateAnalytics()">🔄 分析更新</button>
@@ -882,12 +882,19 @@
                     categories = data.categories || ['開催案内', '観光案内', 'MIF説明', '学校案内'];
                     allTags = new Set(data.allTags || []);
                     
+                    console.log('GitHubからのデータ:', {
+                        masterData: masterData.length,
+                        dailyData: dailyData.length,
+                        categories: categories.length,
+                        allTags: allTags.size
+                    });
+                    
                     // 画面を更新
-                    updateAllTables();
+                    updateMasterTable();
+                    updateDailyTable();
                     updateCategoryList();
                     updateArticleSelect();
-                    calculateAnalytics();
-                    updateTagAnalytics();
+                    updateAllTags();
                     
                     updateGitHubStatus(`読み込み完了 (${data.lastUpdated ? new Date(data.lastUpdated).toLocaleString('ja-JP') : '日時不明'})`, '#10b981');
                     console.log('GitHubからデータ読み込み完了:', data.lastUpdated);
@@ -1008,36 +1015,71 @@
             });
         }
 
+        // 強制読み込み機能
+        function forceLoadFromGitHub() {
+            if (!githubConfig.token) {
+                alert('GitHub連携が設定されていません。「⚙️ GitHub連携設定」から設定してください。');
+                return;
+            }
+            
+            if (confirm('GitHubから最新データを強制読み込みします。\n現在の未保存の変更は失われる可能性があります。\n続行しますか？')) {
+                updateGitHubStatus('強制読み込み中...', '#f59e0b');
+                
+                loadFromGitHub().then(success => {
+                    if (success) {
+                        calculateAnalytics();
+                        updateTagAnalytics();
+                        alert('GitHubから最新データを読み込みました！');
+                    } else {
+                        alert('読み込みに失敗しました。GitHubに保存データが存在しない可能性があります。');
+                    }
+                });
+            }
+        }
+
         // 初期化
         document.addEventListener('DOMContentLoaded', function() {
             console.log('note分析スプレッドシート初期化開始');
-            initializeData();
+            
+            // まずカテゴリ一覧のみ更新
             updateCategoryList();
             
-            // GitHub設定の復元を試行
+            // GitHub設定の復元を最優先で実行
             const savedConfig = localStorage.getItem('githubConfig');
             if (savedConfig) {
                 try {
                     githubConfig = JSON.parse(savedConfig);
                     console.log('GitHub設定を復元:', githubConfig.username + '/' + githubConfig.repo);
-                    updateGitHubStatus('GitHub設定復元中...', '#f59e0b');
+                    updateGitHubStatus('GitHub設定確認中...', '#f59e0b');
                     
-                    // 接続テスト
+                    // 接続テスト後にデータ読み込み
                     testGitHubConnection().then(connected => {
                         if (connected) {
-                            updateGitHubStatus('GitHub連携済み', '#10b981');
+                            updateGitHubStatus('GitHub接続成功 - データ読み込み中...', '#f59e0b');
                             
                             // GitHubからデータを読み込み
                             loadFromGitHub().then(loaded => {
-                                if (!loaded) {
-                                    console.log('GitHubにデータなし - ローカルデータで初期化');
-                                    calculateAnalytics();
-                                    updateTagAnalytics();
+                                if (loaded) {
+                                    console.log('GitHubからデータ読み込み成功');
+                                    updateGitHubStatus('GitHubデータ読み込み完了', '#10b981');
+                                } else {
+                                    console.log('GitHubにデータなし - 新規初期化');
+                                    initializeDataWithoutSamples();
+                                    updateGitHubStatus('新規データで初期化', '#10b981');
                                 }
+                                calculateAnalytics();
+                                updateTagAnalytics();
+                            }).catch(error => {
+                                console.error('GitHub読み込みエラー:', error);
+                                updateGitHubStatus('読み込み失敗 - ローカル初期化', '#ef4444');
+                                initializeData();
+                                calculateAnalytics();
+                                updateTagAnalytics();
                             });
                         } else {
                             console.error('GitHub接続失敗 - 設定を確認してください');
                             updateGitHubStatus('GitHub接続失敗', '#ef4444');
+                            initializeData();
                             calculateAnalytics();
                             updateTagAnalytics();
                         }
@@ -1045,19 +1087,44 @@
                 } catch (e) {
                     console.error('GitHub設定復元エラー:', e);
                     updateGitHubStatus('設定エラー', '#ef4444');
+                    initializeData();
                     calculateAnalytics();
                     updateTagAnalytics();
                 }
             } else {
-                console.log('GitHub未設定 - 手動設定が必要');
+                console.log('GitHub未設定 - サンプルデータで初期化');
                 updateGitHubStatus('GitHub未設定', '#6b7280');
+                initializeData();
                 calculateAnalytics();
                 updateTagAnalytics();
             }
         });
 
+        // GitHub連携時の新規データ初期化（サンプルデータなし）
+        function initializeDataWithoutSamples() {
+            console.log('新規データで初期化 - サンプルデータなし');
+            masterData = [];
+            dailyData = [];
+            allTags = new Set();
+            
+            updateMasterTable();
+            updateDailyTable();
+            updateArticleSelect();
+            updateAllTags();
+        }
+
         function initializeData() {
-            // サンプルデータ
+            // GitHub連携が設定されている場合は、サンプルデータを設定しない
+            if (githubConfig.token) {
+                console.log('GitHub連携済み - サンプルデータをスキップしてGitHubから読み込み');
+                masterData = [];
+                dailyData = [];
+                allTags = new Set();
+                return;
+            }
+            
+            // GitHub未設定の場合のみサンプルデータを設定
+            console.log('GitHub未設定 - サンプルデータで初期化');
             masterData = [
                 {
                     id: 'A001',
