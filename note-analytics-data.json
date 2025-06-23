@@ -53,43 +53,7 @@
       "status": "アクティブ"
     }
   ],
-  "dailyData": [
-    {
-      "date": "2025-06-23",
-      "articleId": "A001",
-      "views": 2,
-      "comments": 4,
-      "likes": 6
-    },
-    {
-      "date": "2025-06-16",
-      "articleId": "A002",
-      "views": 4,
-      "comments": 1,
-      "likes": 3
-    },
-    {
-      "date": "2025-06-18",
-      "articleId": "A002",
-      "views": 5,
-      "comments": 2,
-      "likes": 4
-    },
-    {
-      "date": "2025-06-20",
-      "articleId": "A003",
-      "views": 7,
-      "comments": 4,
-      "likes": 1
-    },
-    {
-      "date": "2025-06-23",
-      "articleId": "A003",
-      "views": 9,
-      "comments": 6,
-      "likes": 2
-    }
-  ],
+  "dailyData": [],
   "categories": [
     "開催案内",
     "観光案内",
@@ -112,6 +76,6 @@
     "#観光",
     "#須崎"
   ],
-  "lastUpdated": "2025-06-23T00:58:59.007Z",
+  "lastUpdated": "2025-06-23T00:59:02.566Z",
   "version": "1.0"
 }
