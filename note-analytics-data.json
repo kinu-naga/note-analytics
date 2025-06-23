@@ -69,6 +69,27 @@
       "likes": 0
     },
     {
+      "date": "2025-06-19",
+      "articleId": "",
+      "views": 0,
+      "comments": 0,
+      "likes": 0
+    },
+    {
+      "date": "2025-06-23",
+      "articleId": "",
+      "views": 0,
+      "comments": 0,
+      "likes": 0
+    },
+    {
+      "date": "2025-06-23",
+      "articleId": "",
+      "views": 0,
+      "comments": 0,
+      "likes": 0
+    },
+    {
       "date": "2025-06-23",
       "articleId": "",
       "views": 0,
@@ -98,6 +119,6 @@
     "#観光",
     "#須崎"
   ],
-  "lastUpdated": "2025-06-23T00:59:10.901Z",
+  "lastUpdated": "2025-06-23T00:59:15.315Z",
   "version": "1.0"
 }
