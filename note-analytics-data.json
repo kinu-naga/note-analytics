@@ -2,7 +2,7 @@
   "masterData": [
     {
       "id": "A001",
-      "title": "",
+      "title": "ああああああああ",
       "publishDate": "",
       "category": "",
       "tags": [],
@@ -18,6 +18,6 @@
     "学校案内"
   ],
   "allTags": [],
-  "lastUpdated": "2025-06-23T00:34:34.993Z",
+  "lastUpdated": "2025-06-23T00:34:40.070Z",
   "version": "1.0"
 }
