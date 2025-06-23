@@ -53,7 +53,15 @@
       "status": "アクティブ"
     }
   ],
-  "dailyData": [],
+  "dailyData": [
+    {
+      "date": "2025-06-23",
+      "articleId": "",
+      "views": 0,
+      "comments": 0,
+      "likes": 0
+    }
+  ],
   "categories": [
     "開催案内",
     "観光案内",
@@ -76,6 +84,6 @@
     "#観光",
     "#須崎"
   ],
-  "lastUpdated": "2025-06-23T00:59:02.566Z",
+  "lastUpdated": "2025-06-23T00:59:04.299Z",
   "version": "1.0"
 }
