@@ -17,7 +17,7 @@
       "id": "A002",
       "title": "aaaa",
       "publishDate": "2025-06-20",
-      "category": "",
+      "category": "観光案内",
       "tags": [],
       "url": "",
       "status": "アクティブ"
@@ -92,6 +92,6 @@
     "#MIF2024",
     "#名古屋"
   ],
-  "lastUpdated": "2025-06-23T00:02:01.409Z",
+  "lastUpdated": "2025-06-23T00:02:03.200Z",
   "version": "1.0"
 }
