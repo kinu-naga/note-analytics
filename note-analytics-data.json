@@ -14,7 +14,9 @@
       "title": "いいいいいいいい",
       "publishDate": "2025-06-24",
       "category": "MIF説明",
-      "tags": [],
+      "tags": [
+        "#冬休み"
+      ],
       "url": "",
       "status": "アクティブ"
     }
@@ -26,7 +28,9 @@
     "MIF説明",
     "学校案内"
   ],
-  "allTags": [],
-  "lastUpdated": "2025-06-23T00:34:55.906Z",
+  "allTags": [
+    "#冬休み"
+  ],
+  "lastUpdated": "2025-06-23T00:34:59.395Z",
   "version": "1.0"
 }
