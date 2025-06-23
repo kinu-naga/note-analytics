@@ -368,9 +368,10 @@
         
         <div class="header-actions">
             <button class="btn" onclick="setupGitHubIntegration()">⚙️ GitHub連携設定</button>
+            <button class="btn" onclick="forceSaveToGitHub()">💾 手動保存</button>
             <button class="btn" onclick="loadFromGitHub()">☁️ GitHubから読み込み</button>
+            <button class="btn" onclick="showDebugInfo()">🔧 デバッグ情報</button>
             <button class="btn" onclick="exportToCSV()">📥 CSVエクスポート</button>
-            <button class="btn" onclick="importFromCSV()">📤 CSVインポート</button>
             <button class="btn btn-primary" onclick="calculateAnalytics()">🔄 分析更新</button>
             <span id="githubStatus" style="margin-left: 12px; font-size: 12px; font-weight: 500;"></span>
         </div>
@@ -738,6 +739,9 @@
             // 設定をテスト
             testGitHubConnection().then(success => {
                 if (success) {
+                    // 設定をlocalStorageに保存
+                    localStorage.setItem('githubConfig', JSON.stringify(githubConfig));
+                    
                     document.getElementById('githubSetupModal').style.display = 'none';
                     updateGitHubStatus('接続成功', '#10b981');
                     alert('GitHub連携の設定が完了しました！自動保存が有効になります。');
@@ -754,13 +758,23 @@
 
         async function testGitHubConnection() {
             try {
+                console.log('GitHub接続テスト開始:', `${githubConfig.username}/${githubConfig.repo}`);
                 const response = await fetch(`https://api.github.com/repos/${githubConfig.username}/${githubConfig.repo}`, {
                     headers: {
                         'Authorization': `token ${githubConfig.token}`,
                         'Accept': 'application/vnd.github.v3+json'
                     }
                 });
-                return response.ok;
+                
+                if (response.ok) {
+                    const repoData = await response.json();
+                    console.log('GitHub接続成功:', repoData.name);
+                    return true;
+                } else {
+                    const errorText = await response.text();
+                    console.error('GitHub接続失敗:', response.status, errorText);
+                    return false;
+                }
             } catch (error) {
                 console.error('GitHub接続テストエラー:', error);
                 return false;
@@ -825,11 +839,15 @@
                 });
                 
                 if (putResponse.ok) {
-                    updateGitHubStatus('自動保存完了', '#10b981');
-                    console.log('GitHubに保存完了:', new Date().toLocaleString());
+                    const saveTime = new Date().toLocaleString('ja-JP');
+                    updateGitHubStatus(`自動保存完了 (${saveTime.split(' ')[1]})`, '#10b981');
+                    localStorage.setItem('lastGitHubSave', saveTime);
+                    console.log('GitHubに保存完了:', saveTime);
                     return true;
                 } else {
-                    throw new Error(`保存失敗: ${putResponse.status}`);
+                    const errorText = await putResponse.text();
+                    console.error('GitHub保存エラー詳細:', errorText);
+                    throw new Error(`保存失敗: ${putResponse.status} - ${errorText}`);
                 }
                 
             } catch (error) {
@@ -872,13 +890,16 @@
                     updateTagAnalytics();
                     
                     updateGitHubStatus(`読み込み完了 (${data.lastUpdated ? new Date(data.lastUpdated).toLocaleString('ja-JP') : '日時不明'})`, '#10b981');
-                    console.log('GitHubからデータ読み込み完了');
+                    console.log('GitHubからデータ読み込み完了:', data.lastUpdated);
                     return true;
                 } else if (response.status === 404) {
                     updateGitHubStatus('保存データなし', '#6b7280');
+                    console.log('GitHub上にデータファイルが見つかりません');
                     return false;
                 } else {
-                    throw new Error(`読み込み失敗: ${response.status}`);
+                    const errorText = await response.text();
+                    console.error('GitHub読み込みエラー詳細:', errorText);
+                    throw new Error(`読み込み失敗: ${response.status} - ${errorText}`);
                 }
                 
             } catch (error) {
@@ -927,12 +948,19 @@
             
             // GitHub連携が有効な場合は自動保存
             if (githubConfig.token) {
+                console.log('データ変更検出 - 自動保存を開始');
+                updateGitHubStatus('保存準備中...', '#f59e0b');
+                
                 // デバウンス: 1秒後に保存実行
                 clearTimeout(window.saveTimeout);
                 window.saveTimeout = setTimeout(() => {
+                    console.log('自動保存実行中...');
                     saveToGitHub();
                 }, 1000);
             } else {
+                console.log('GitHub未設定 - CSVバックアップを推奨');
+                updateGitHubStatus('GitHub未設定', '#ef4444');
+                
                 // GitHub未設定の場合はバックアップ警告
                 if (totalRecords > 0 && totalRecords % 5 === 0) {
                     showDataBackupWarning();
@@ -940,8 +968,49 @@
             }
         }
 
+        // デバッグ用詳細ログ表示
+        function showDebugInfo() {
+            const debugInfo = {
+                'GitHub設定状況': {
+                    'ユーザー名': githubConfig.username || '未設定',
+                    'リポジトリ': githubConfig.repo || '未設定', 
+                    'トークン': githubConfig.token ? `設定済み (${githubConfig.token.substring(0,10)}...)` : '未設定'
+                },
+                'データ状況': {
+                    '記事数': masterData.length,
+                    '日次データ数': dailyData.length,
+                    'カテゴリ数': categories.length,
+                    'タグ数': allTags.size
+                },
+                '最後の保存状況': localStorage.getItem('lastGitHubSave') || '保存履歴なし'
+            };
+            
+            console.log('=== noteスプレッドシート デバッグ情報 ===');
+            console.log(JSON.stringify(debugInfo, null, 2));
+            
+            alert(`デバッグ情報をコンソールに出力しました。\n\n簡易確認:\n・記事数: ${masterData.length}\n・日次データ: ${dailyData.length}\n・GitHub設定: ${githubConfig.token ? 'あり' : 'なし'}`);
+        }
+
+        // 手動保存機能
+        function forceSaveToGitHub() {
+            if (!githubConfig.token) {
+                alert('GitHub連携が設定されていません。「⚙️ GitHub連携設定」から設定してください。');
+                return;
+            }
+            
+            updateGitHubStatus('手動保存中...', '#f59e0b');
+            saveToGitHub().then(success => {
+                if (success) {
+                    alert('手動保存が完了しました！');
+                } else {
+                    alert('保存に失敗しました。設定とネットワーク接続を確認してください。');
+                }
+            });
+        }
+
         // 初期化
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('note分析スプレッドシート初期化開始');
             initializeData();
             updateCategoryList();
             
@@ -950,22 +1019,38 @@
             if (savedConfig) {
                 try {
                     githubConfig = JSON.parse(savedConfig);
-                    updateGitHubStatus('GitHub連携設定済み', '#10b981');
+                    console.log('GitHub設定を復元:', githubConfig.username + '/' + githubConfig.repo);
+                    updateGitHubStatus('GitHub設定復元中...', '#f59e0b');
                     
-                    // GitHubからデータを読み込み
-                    loadFromGitHub().then(loaded => {
-                        if (!loaded) {
-                            // GitHubにデータがない場合はサンプルデータで初期化
+                    // 接続テスト
+                    testGitHubConnection().then(connected => {
+                        if (connected) {
+                            updateGitHubStatus('GitHub連携済み', '#10b981');
+                            
+                            // GitHubからデータを読み込み
+                            loadFromGitHub().then(loaded => {
+                                if (!loaded) {
+                                    console.log('GitHubにデータなし - ローカルデータで初期化');
+                                    calculateAnalytics();
+                                    updateTagAnalytics();
+                                }
+                            });
+                        } else {
+                            console.error('GitHub接続失敗 - 設定を確認してください');
+                            updateGitHubStatus('GitHub接続失敗', '#ef4444');
                             calculateAnalytics();
                             updateTagAnalytics();
                         }
                     });
                 } catch (e) {
                     console.error('GitHub設定復元エラー:', e);
+                    updateGitHubStatus('設定エラー', '#ef4444');
                     calculateAnalytics();
                     updateTagAnalytics();
                 }
             } else {
+                console.log('GitHub未設定 - 手動設定が必要');
+                updateGitHubStatus('GitHub未設定', '#6b7280');
                 calculateAnalytics();
                 updateTagAnalytics();
             }
@@ -1713,14 +1798,14 @@
             link.click();
             
             // エクスポート完了メッセージ
-            const statusElement = document.getElementById('saveStatus');
-            if (statusElement) {
-                statusElement.textContent = 'CSVエクスポート完了';
-                statusElement.style.color = '#10b981';
-                setTimeout(() => {
-                    statusElement.textContent = '';
-                }, 3000);
-            }
+            updateGitHubStatus('CSVエクスポート完了', '#10b981');
+            setTimeout(() => {
+                if (githubConfig.token) {
+                    updateGitHubStatus('GitHub連携中', '#10b981');
+                } else {
+                    updateGitHubStatus('', '#000');
+                }
+            }, 3000);
         }
 
         function importFromCSV() {
