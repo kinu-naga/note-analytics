@@ -17,7 +17,7 @@
       "id": "A002",
       "title": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       "publishDate": "2025-06-24",
-      "category": "",
+      "category": "開催案内",
       "tags": [],
       "url": "",
       "status": "アクティブ"
@@ -92,6 +92,6 @@
     "#MIF2024",
     "#名古屋"
   ],
-  "lastUpdated": "2025-06-23T00:13:01.937Z",
+  "lastUpdated": "2025-06-23T00:13:03.258Z",
   "version": "1.0"
 }
