@@ -51,7 +51,7 @@
     },
     {
       "date": "2025-06-16",
-      "articleId": "",
+      "articleId": "A002",
       "views": 0,
       "comments": 0,
       "likes": 0
@@ -75,6 +75,6 @@
     "#冬休み",
     "#タグ３"
   ],
-  "lastUpdated": "2025-06-23T00:36:04.508Z",
+  "lastUpdated": "2025-06-23T00:36:06.130Z",
   "version": "1.0"
 }
