@@ -12,97 +12,64 @@
       ],
       "url": "https://note.com/sample1",
       "status": "アクティブ"
-    },
-    {
-      "id": "A002",
-      "title": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-      "publishDate": "2025-06-24",
-      "category": "開催案内",
-      "tags": [
-        "#冬休み",
-        "#東京"
-      ],
-      "url": "",
-      "status": "アクティブ"
     }
   ],
   "dailyData": [
     {
       "date": "2025-06-16",
       "articleId": "A001",
-      "views": 1080,
-      "comments": 26,
-      "likes": 91
+      "views": 1334,
+      "comments": 22,
+      "likes": 62
     },
     {
       "date": "2025-06-17",
       "articleId": "A001",
-      "views": 1245,
+      "views": 1324,
       "comments": 25,
-      "likes": 56
+      "likes": 117
     },
     {
       "date": "2025-06-18",
       "articleId": "A001",
-      "views": 1080,
+      "views": 1015,
       "comments": 28,
-      "likes": 55
+      "likes": 96
     },
     {
       "date": "2025-06-19",
       "articleId": "A001",
-      "views": 1403,
-      "comments": 15,
-      "likes": 80
+      "views": 1075,
+      "comments": 12,
+      "likes": 50
     },
     {
       "date": "2025-06-20",
       "articleId": "A001",
-      "views": 1228,
-      "comments": 12,
-      "likes": 126
+      "views": 1219,
+      "comments": 13,
+      "likes": 76
     },
     {
       "date": "2025-06-21",
       "articleId": "A001",
-      "views": 1160,
-      "comments": 20,
-      "likes": 103
+      "views": 1129,
+      "comments": 24,
+      "likes": 140
     },
     {
       "date": "2025-06-22",
       "articleId": "A001",
-      "views": 1380,
-      "comments": 26,
-      "likes": 63
+      "views": 1367,
+      "comments": 16,
+      "likes": 93
     },
     {
       "date": "2025-06-23",
       "articleId": "A001",
-      "views": 1115,
+      "views": 1187,
       "comments": 13,
-      "likes": 78
-    },
-    {
-      "date": "2025-06-23",
-      "articleId": "A002",
-      "views": 20,
-      "comments": 1,
-      "likes": 0
-    },
-    {
-      "date": "2025-06-26",
-      "articleId": "A002",
-      "views": 30,
-      "comments": 4,
-      "likes": 0
-    },
-    {
-      "date": "2025-06-30",
-      "articleId": "A002",
-      "views": 100,
-      "comments": 9,
-      "likes": 0
+      "likes": 66
     }
   ],
   "categories": [
@@ -114,10 +81,8 @@
   "allTags": [
     "#夏祭り",
     "#MIF2024",
-    "#名古屋",
-    "#冬休み",
-    "#東京"
+    "#名古屋"
   ],
-  "lastUpdated": "2025-06-23T00:14:02.129Z",
+  "lastUpdated": "2025-06-23T00:24:19.530Z",
   "version": "1.0"
 }
