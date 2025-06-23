@@ -37,7 +37,7 @@
   "dailyData": [
     {
       "date": "2025-06-22",
-      "articleId": "",
+      "articleId": "A001",
       "views": 0,
       "comments": 0,
       "likes": 0
@@ -61,6 +61,6 @@
     "#冬休み",
     "#タグ３"
   ],
-  "lastUpdated": "2025-06-23T00:35:35.086Z",
+  "lastUpdated": "2025-06-23T00:35:36.566Z",
   "version": "1.0"
 }
