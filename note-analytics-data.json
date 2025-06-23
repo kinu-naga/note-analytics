@@ -2,87 +2,22 @@
   "masterData": [
     {
       "id": "A001",
-      "title": "夏祭り開催のお知らせ",
-      "publishDate": "2024-01-15",
-      "category": "開催案内",
-      "tags": [
-        "#夏祭り",
-        "#MIF2024",
-        "#名古屋"
-      ],
-      "url": "https://note.com/sample1",
+      "title": "",
+      "publishDate": "",
+      "category": "",
+      "tags": [],
+      "url": "",
       "status": "アクティブ"
     }
   ],
-  "dailyData": [
-    {
-      "date": "2025-06-16",
-      "articleId": "A001",
-      "views": 1334,
-      "comments": 22,
-      "likes": 62
-    },
-    {
-      "date": "2025-06-17",
-      "articleId": "A001",
-      "views": 1324,
-      "comments": 25,
-      "likes": 117
-    },
-    {
-      "date": "2025-06-18",
-      "articleId": "A001",
-      "views": 1015,
-      "comments": 28,
-      "likes": 96
-    },
-    {
-      "date": "2025-06-19",
-      "articleId": "A001",
-      "views": 1075,
-      "comments": 12,
-      "likes": 50
-    },
-    {
-      "date": "2025-06-20",
-      "articleId": "A001",
-      "views": 1219,
-      "comments": 13,
-      "likes": 76
-    },
-    {
-      "date": "2025-06-21",
-      "articleId": "A001",
-      "views": 1129,
-      "comments": 24,
-      "likes": 140
-    },
-    {
-      "date": "2025-06-22",
-      "articleId": "A001",
-      "views": 1367,
-      "comments": 16,
-      "likes": 93
-    },
-    {
-      "date": "2025-06-23",
-      "articleId": "A001",
-      "views": 1187,
-      "comments": 13,
-      "likes": 66
-    }
-  ],
+  "dailyData": [],
   "categories": [
     "開催案内",
     "観光案内",
     "MIF説明",
     "学校案内"
   ],
-  "allTags": [
-    "#夏祭り",
-    "#MIF2024",
-    "#名古屋"
-  ],
-  "lastUpdated": "2025-06-23T00:24:19.530Z",
+  "allTags": [],
+  "lastUpdated": "2025-06-23T00:34:34.993Z",
   "version": "1.0"
 }
