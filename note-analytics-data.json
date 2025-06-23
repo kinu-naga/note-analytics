@@ -101,7 +101,7 @@
       "date": "2025-06-30",
       "articleId": "A002",
       "views": 100,
-      "comments": 0,
+      "comments": 9,
       "likes": 0
     }
   ],
@@ -118,6 +118,6 @@
     "#冬休み",
     "#東京"
   ],
-  "lastUpdated": "2025-06-23T00:13:59.851Z",
+  "lastUpdated": "2025-06-23T00:14:02.129Z",
   "version": "1.0"
 }
