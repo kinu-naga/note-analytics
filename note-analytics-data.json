@@ -158,6 +158,13 @@
       "views": 32,
       "comments": 0,
       "likes": 1
+    },
+    {
+      "date": "2025-06-25",
+      "articleId": "",
+      "views": 0,
+      "comments": 0,
+      "likes": 0
     }
   ],
   "categories": [
@@ -182,6 +189,6 @@
     "#観光",
     "#須崎"
   ],
-  "lastUpdated": "2025-06-24T05:11:36.688Z",
+  "lastUpdated": "2025-06-25T00:31:43.718Z",
   "version": "1.0"
 }
