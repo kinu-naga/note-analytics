@@ -164,7 +164,7 @@
       "articleId": "A001",
       "views": 61,
       "comments": 0,
-      "likes": 0
+      "likes": 1
     },
     {
       "date": "2025-06-25",
@@ -203,6 +203,6 @@
     "#観光",
     "#須崎"
   ],
-  "lastUpdated": "2025-06-25T00:34:11.400Z",
+  "lastUpdated": "2025-06-25T00:34:14.385Z",
   "version": "1.0"
 }
