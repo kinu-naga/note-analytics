@@ -353,6 +353,28 @@
             background: #c7d2fe;
             transform: scale(1.05);
         }
+        
+        .individual-chart-tab {
+            background: #f8f9fa;
+            border: 1px solid #e1e4e8;
+            margin: 0;
+            border-radius: 6px 6px 0 0;
+        }
+        
+        .individual-chart-tab.active {
+            background: #fff;
+            border-bottom-color: #fff;
+            color: #1f2937;
+            font-weight: 500;
+        }
+        
+        .individual-chart-tab:hover {
+            background: #f3f4f6;
+        }
+        
+        .individual-chart-tab.active:hover {
+            background: #fff;
+        }
     </style>
 </head>
 <body>
@@ -702,12 +724,288 @@
     </div>
 
     <script>
-        // データストレージ
+        // データ補間・分析機能
+        function processTimeSeriesData(articleData) {
+            if (articleData.length === 0) return { dailyIncrements: [], cumulativeData: [] };
+            
+            // 日付順にソート
+            const sortedData = articleData.sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            // 累積値から日次増加分を算出
+            const dailyIncrements = [];
+            const cumulativeData = [];
+            
+            for (let i = 0; i < sortedData.length; i++) {
+                const current = sortedData[i];
+                const previous = i > 0 ? sortedData[i - 1] : null;
+                
+                // 日次増加分を計算
+                const increment = {
+                    date: current.date,
+                    viewsIncrement: previous ? Math.max(0, current.views - previous.views) : current.views,
+                    commentsIncrement: previous ? Math.max(0, current.comments - previous.comments) : current.comments,
+                    likesIncrement: previous ? Math.max(0, current.likes - previous.likes) : current.likes,
+                    isActual: true // 実測データ
+                };
+                
+                dailyIncrements.push(increment);
+                cumulativeData.push({
+                    date: current.date,
+                    views: current.views,
+                    comments: current.comments,
+                    likes: current.likes,
+                    isActual: true
+                });
+            }
+            
+            // データ欠損の補間
+            const interpolatedIncrements = interpolateMissingDays(dailyIncrements);
+            const interpolatedCumulative = generateCumulativeFromIncrements(interpolatedIncrements);
+            
+            return {
+                dailyIncrements: interpolatedIncrements,
+                cumulativeData: interpolatedCumulative
+            };
+        }
+
+        function interpolateMissingDays(dailyData) {
+            if (dailyData.length < 2) return dailyData;
+            
+            const result = [];
+            
+            for (let i = 0; i < dailyData.length - 1; i++) {
+                const current = dailyData[i];
+                const next = dailyData[i + 1];
+                
+                result.push(current);
+                
+                // 日付の差を計算
+                const currentDate = new Date(current.date);
+                const nextDate = new Date(next.date);
+                const daysDiff = (nextDate - currentDate) / (1000 * 60 * 60 * 24);
+                
+                // 1日以上の gap がある場合は補間
+                if (daysDiff > 1) {
+                    const missingDays = Math.floor(daysDiff) - 1;
+                    const totalIncrement = {
+                        views: next.viewsIncrement,
+                        comments: next.commentsIncrement,
+                        likes: next.likesIncrement
+                    };
+                    
+                    // 各日の重みを計算（土日は70%）
+                    const weights = [];
+                    let totalWeight = 0;
+                    
+                    for (let j = 1; j <= missingDays + 1; j++) {
+                        const date = new Date(currentDate);
+                        date.setDate(date.getDate() + j);
+                        const dayOfWeek = date.getDay(); // 0=日曜, 6=土曜
+                        const weight = (dayOfWeek === 0 || dayOfWeek === 6) ? 0.7 : 1.0;
+                        weights.push(weight);
+                        totalWeight += weight;
+                    }
+                    
+                    // 補間データを生成
+                    for (let j = 1; j <= missingDays; j++) {
+                        const interpolatedDate = new Date(currentDate);
+                        interpolatedDate.setDate(interpolatedDate.getDate() + j);
+                        
+                        const weight = weights[j - 1];
+                        const ratio = weight / totalWeight;
+                        
+                        result.push({
+                            date: interpolatedDate.toISOString().split('T')[0],
+                            viewsIncrement: Math.round(totalIncrement.views * ratio),
+                            commentsIncrement: Math.round(totalIncrement.comments * ratio),
+                            likesIncrement: Math.round(totalIncrement.likes * ratio),
+                            isActual: false // 補間データ
+                        });
+                    }
+                    
+                    // 最後の日（実測日）の増加分を調整
+                    const lastWeight = weights[weights.length - 1];
+                    const lastRatio = lastWeight / totalWeight;
+                    next.viewsIncrement = Math.round(totalIncrement.views * lastRatio);
+                    next.commentsIncrement = Math.round(totalIncrement.comments * lastRatio);
+                    next.likesIncrement = Math.round(totalIncrement.likes * lastRatio);
+                }
+            }
+            
+            // 最後のデータを追加
+            if (dailyData.length > 0) {
+                result.push(dailyData[dailyData.length - 1]);
+            }
+            
+            return result;
+        }
+
+        function generateCumulativeFromIncrements(incrementData) {
+            const result = [];
+            let cumulativeViews = 0;
+            let cumulativeComments = 0;
+            let cumulativeLikes = 0;
+            
+            incrementData.forEach(data => {
+                cumulativeViews += data.viewsIncrement;
+                cumulativeComments += data.commentsIncrement;
+                cumulativeLikes += data.likesIncrement;
+                
+                result.push({
+                    date: data.date,
+                    views: cumulativeViews,
+                    comments: cumulativeComments,
+                    likes: cumulativeLikes,
+                    isActual: data.isActual
+                });
+            });
+            
+            return result;
+        }
         let masterData = [];
         let dailyData = [];
         let charts = {};
         let categories = ['開催案内', '観光案内', 'MIF説明', '学校案内'];
         let allTags = new Set(); // 全タグの管理
+
+        // データ補間・分析機能
+        function processTimeSeriesData(articleData) {
+            if (articleData.length === 0) return { dailyIncrements: [], cumulativeData: [] };
+            
+            // 日付順にソート
+            const sortedData = articleData.sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            // 累積値から日次増加分を算出
+            const dailyIncrements = [];
+            const cumulativeData = [];
+            
+            for (let i = 0; i < sortedData.length; i++) {
+                const current = sortedData[i];
+                const previous = i > 0 ? sortedData[i - 1] : null;
+                
+                // 日次増加分を計算
+                const increment = {
+                    date: current.date,
+                    viewsIncrement: previous ? Math.max(0, current.views - previous.views) : current.views,
+                    commentsIncrement: previous ? Math.max(0, current.comments - previous.comments) : current.comments,
+                    likesIncrement: previous ? Math.max(0, current.likes - previous.likes) : current.likes,
+                    isActual: true // 実測データ
+                };
+                
+                dailyIncrements.push(increment);
+                cumulativeData.push({
+                    date: current.date,
+                    views: current.views,
+                    comments: current.comments,
+                    likes: current.likes,
+                    isActual: true
+                });
+            }
+            
+            // データ欠損の補間
+            const interpolatedIncrements = interpolateMissingDays(dailyIncrements);
+            const interpolatedCumulative = generateCumulativeFromIncrements(interpolatedIncrements);
+            
+            return {
+                dailyIncrements: interpolatedIncrements,
+                cumulativeData: interpolatedCumulative
+            };
+        }
+
+        function interpolateMissingDays(dailyData) {
+            if (dailyData.length < 2) return dailyData;
+            
+            const result = [];
+            
+            for (let i = 0; i < dailyData.length - 1; i++) {
+                const current = dailyData[i];
+                const next = dailyData[i + 1];
+                
+                result.push(current);
+                
+                // 日付の差を計算
+                const currentDate = new Date(current.date);
+                const nextDate = new Date(next.date);
+                const daysDiff = (nextDate - currentDate) / (1000 * 60 * 60 * 24);
+                
+                // 1日以上の gap がある場合は補間
+                if (daysDiff > 1) {
+                    const missingDays = Math.floor(daysDiff) - 1;
+                    const totalIncrement = {
+                        views: next.viewsIncrement,
+                        comments: next.commentsIncrement,
+                        likes: next.likesIncrement
+                    };
+                    
+                    // 各日の重みを計算（土日は70%）
+                    const weights = [];
+                    let totalWeight = 0;
+                    
+                    for (let j = 1; j <= missingDays + 1; j++) {
+                        const date = new Date(currentDate);
+                        date.setDate(date.getDate() + j);
+                        const dayOfWeek = date.getDay(); // 0=日曜, 6=土曜
+                        const weight = (dayOfWeek === 0 || dayOfWeek === 6) ? 0.7 : 1.0;
+                        weights.push(weight);
+                        totalWeight += weight;
+                    }
+                    
+                    // 補間データを生成
+                    for (let j = 1; j <= missingDays; j++) {
+                        const interpolatedDate = new Date(currentDate);
+                        interpolatedDate.setDate(interpolatedDate.getDate() + j);
+                        
+                        const weight = weights[j - 1];
+                        const ratio = weight / totalWeight;
+                        
+                        result.push({
+                            date: interpolatedDate.toISOString().split('T')[0],
+                            viewsIncrement: Math.round(totalIncrement.views * ratio),
+                            commentsIncrement: Math.round(totalIncrement.comments * ratio),
+                            likesIncrement: Math.round(totalIncrement.likes * ratio),
+                            isActual: false // 補間データ
+                        });
+                    }
+                    
+                    // 最後の日（実測日）の増加分を調整
+                    const lastWeight = weights[weights.length - 1];
+                    const lastRatio = lastWeight / totalWeight;
+                    next.viewsIncrement = Math.round(totalIncrement.views * lastRatio);
+                    next.commentsIncrement = Math.round(totalIncrement.comments * lastRatio);
+                    next.likesIncrement = Math.round(totalIncrement.likes * lastRatio);
+                }
+            }
+            
+            // 最後のデータを追加
+            if (dailyData.length > 0) {
+                result.push(dailyData[dailyData.length - 1]);
+            }
+            
+            return result;
+        }
+
+        function generateCumulativeFromIncrements(incrementData) {
+            const result = [];
+            let cumulativeViews = 0;
+            let cumulativeComments = 0;
+            let cumulativeLikes = 0;
+            
+            incrementData.forEach(data => {
+                cumulativeViews += data.viewsIncrement;
+                cumulativeComments += data.commentsIncrement;
+                cumulativeLikes += data.likesIncrement;
+                
+                result.push({
+                    date: data.date,
+                    views: cumulativeViews,
+                    comments: cumulativeComments,
+                    likes: cumulativeLikes,
+                    isActual: data.isActual
+                });
+            });
+            
+            return result;
+        }
 
         // GitHub API設定
         let githubConfig = {
@@ -1717,6 +2015,7 @@
 
             // チャート更新
             updatePerformanceChart();
+            updateDailyIncrementChart();
             
             // タグ分析も更新
             updateTagAnalytics();
@@ -1725,9 +2024,12 @@
         function updatePerformanceChart() {
             const ctx = document.getElementById('performanceChart').getContext('2d');
             
-            // 日付別データを集計
+            // 全記事の時系列データを処理
+            const allTimeSeriesData = processTimeSeriesData(dailyData);
+            
+            // 日付別データを集計（累積）
             const dateGroups = {};
-            dailyData.forEach(data => {
+            allTimeSeriesData.cumulativeData.forEach(data => {
                 if (!dateGroups[data.date]) {
                     dateGroups[data.date] = { views: 0, comments: 0, likes: 0 };
                 }
@@ -1751,24 +2053,149 @@
                     labels: sortedDates,
                     datasets: [
                         {
-                            label: 'ビュー数',
+                            label: 'ビュー数（累積）',
                             data: viewsData,
                             borderColor: '#3b82f6',
                             backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                            yAxisID: 'y'
+                            yAxisID: 'y',
+                            tension: 0.4
                         },
                         {
-                            label: 'コメント数',
+                            label: 'コメント数（累積）',
                             data: commentsData,
                             borderColor: '#10b981',
                             backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                            yAxisID: 'y1'
+                            yAxisID: 'y1',
+                            tension: 0.4
                         },
                         {
-                            label: 'スキ数',
+                            label: 'スキ数（累積）',
                             data: likesData,
                             borderColor: '#f59e0b',
                             backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                            yAxisID: 'y1',
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'ビュー数'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                            title: {
+                                display: true,
+                                text: 'コメント・スキ数'
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateDailyIncrementChart() {
+            const ctx = document.getElementById('dailyIncrementChart').getContext('2d');
+            
+            // 全記事の時系列データを処理
+            const allTimeSeriesData = processTimeSeriesData(dailyData);
+            
+            // 日付別の日次増加分を集計
+            const dateGroups = {};
+            allTimeSeriesData.dailyIncrements.forEach(data => {
+                if (!dateGroups[data.date]) {
+                    dateGroups[data.date] = { 
+                        viewsIncrement: 0, 
+                        commentsIncrement: 0, 
+                        likesIncrement: 0,
+                        hasActualData: false,
+                        hasInterpolatedData: false
+                    };
+                }
+                dateGroups[data.date].viewsIncrement += data.viewsIncrement;
+                dateGroups[data.date].commentsIncrement += data.commentsIncrement;
+                dateGroups[data.date].likesIncrement += data.likesIncrement;
+                
+                if (data.isActual) {
+                    dateGroups[data.date].hasActualData = true;
+                } else {
+                    dateGroups[data.date].hasInterpolatedData = true;
+                }
+            });
+
+            const sortedDates = Object.keys(dateGroups).sort();
+            const viewsIncrementData = sortedDates.map(date => dateGroups[date].viewsIncrement);
+            const commentsIncrementData = sortedDates.map(date => dateGroups[date].commentsIncrement);
+            const likesIncrementData = sortedDates.map(date => dateGroups[date].likesIncrement);
+            
+            // 実測データと補間データを分ける
+            const actualViewsData = sortedDates.map(date => 
+                dateGroups[date].hasActualData ? dateGroups[date].viewsIncrement : null
+            );
+            const interpolatedViewsData = sortedDates.map(date => 
+                dateGroups[date].hasInterpolatedData && !dateGroups[date].hasActualData ? dateGroups[date].viewsIncrement : null
+            );
+
+            if (charts.dailyIncrement) {
+                charts.dailyIncrement.destroy();
+            }
+
+            charts.dailyIncrement = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: sortedDates,
+                    datasets: [
+                        {
+                            label: 'ビュー数増加（実測）',
+                            data: actualViewsData,
+                            backgroundColor: '#3b82f6',
+                            borderColor: '#1d4ed8',
+                            borderWidth: 1,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'ビュー数増加（推測）',
+                            data: interpolatedViewsData,
+                            backgroundColor: 'rgba(59, 130, 246, 0.4)',
+                            borderColor: '#3b82f6',
+                            borderWidth: 1,
+                            borderDash: [5, 5],
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'コメント数増加',
+                            data: commentsIncrementData,
+                            backgroundColor: '#10b981',
+                            borderColor: '#047857',
+                            borderWidth: 1,
+                            yAxisID: 'y1'
+                        },
+                        {
+                            label: 'スキ数増加',
+                            data: likesIncrementData,
+                            backgroundColor: '#f59e0b',
+                            borderColor: '#d97706',
+                            borderWidth: 1,
                             yAxisID: 'y1'
                         }
                     ]
@@ -1781,14 +2208,38 @@
                             type: 'linear',
                             display: true,
                             position: 'left',
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'ビュー数増加'
+                            }
                         },
                         y1: {
                             type: 'linear',
                             display: true,
                             position: 'right',
+                            beginAtZero: true,
                             grid: {
                                 drawOnChartArea: false,
                             },
+                            title: {
+                                display: true,
+                                text: 'コメント・スキ数増加'
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                afterLabel: function(context) {
+                                    const date = context.label;
+                                    const dateData = dateGroups[date];
+                                    if (dateData && dateData.hasInterpolatedData && !dateData.hasActualData) {
+                                        return '※推測値';
+                                    }
+                                    return '';
+                                }
+                            }
                         }
                     }
                 }
@@ -1836,11 +2287,49 @@
             updateIndividualChart(selectedId);
         }
 
+        function switchIndividualChart(chartType) {
+            // タブの見た目を切り替え
+            document.querySelectorAll('.individual-chart-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            if (chartType === 'cumulative') {
+                document.getElementById('cumulativeTab').classList.add('active');
+                document.getElementById('individualChart').style.display = 'block';
+                document.getElementById('individualDailyChart').style.display = 'none';
+            } else {
+                document.getElementById('dailyTab').classList.add('active');
+                document.getElementById('individualChart').style.display = 'none';
+                document.getElementById('individualDailyChart').style.display = 'block';
+            }
+            
+            // 選択中の記事データでチャートを更新
+            const selectedId = document.getElementById('articleSelect').value;
+            if (selectedId) {
+                updateIndividualChart(selectedId);
+            }
+        }
+
         function updateIndividualChart(articleId) {
+            const articleData = dailyData.filter(d => d.articleId === articleId);
+            if (articleData.length === 0) return;
+            
+            const timeSeriesData = processTimeSeriesData(articleData);
+            
+            // 累積推移チャート
+            updateIndividualCumulativeChart(timeSeriesData.cumulativeData);
+            
+            // 日次増分チャート
+            updateIndividualDailyChart(timeSeriesData.dailyIncrements);
+        }
+
+        function updateIndividualCumulativeChart(cumulativeData) {
             const ctx = document.getElementById('individualChart').getContext('2d');
-            const articleData = dailyData.filter(d => d.articleId === articleId).sort((a, b) => 
-                new Date(a.date) - new Date(b.date)
-            );
+            
+            const labels = cumulativeData.map(d => d.date);
+            const viewsData = cumulativeData.map(d => d.views);
+            const commentsData = cumulativeData.map(d => d.comments);
+            const likesData = cumulativeData.map(d => d.likes);
 
             if (charts.individual) {
                 charts.individual.destroy();
@@ -1849,31 +2338,114 @@
             charts.individual = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: articleData.map(d => d.date),
+                    labels: labels,
                     datasets: [
                         {
-                            label: 'ビュー数',
-                            data: articleData.map(d => d.views),
+                            label: 'ビュー数（累積）',
+                            data: viewsData,
                             borderColor: '#3b82f6',
                             backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            tension: 0.4
                         },
                         {
-                            label: 'コメント数',
-                            data: articleData.map(d => d.comments),
+                            label: 'コメント数（累積）',
+                            data: commentsData,
                             borderColor: '#10b981',
                             backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.4
                         },
                         {
-                            label: 'スキ数',
-                            data: articleData.map(d => d.likes),
+                            label: 'スキ数（累積）',
+                            data: likesData,
                             borderColor: '#f59e0b',
                             backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                            tension: 0.4
                         }
                     ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateIndividualDailyChart(dailyIncrements) {
+            const ctx = document.getElementById('individualDailyChart').getContext('2d');
+            
+            const labels = dailyIncrements.map(d => d.date);
+            const actualViewsData = dailyIncrements.map(d => d.isActual ? d.viewsIncrement : null);
+            const interpolatedViewsData = dailyIncrements.map(d => !d.isActual ? d.viewsIncrement : null);
+            const commentsData = dailyIncrements.map(d => d.commentsIncrement);
+            const likesData = dailyIncrements.map(d => d.likesIncrement);
+
+            if (charts.individualDaily) {
+                charts.individualDaily.destroy();
+            }
+
+            charts.individualDaily = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'ビュー数増加（実測）',
+                            data: actualViewsData,
+                            backgroundColor: '#3b82f6',
+                            borderColor: '#1d4ed8',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'ビュー数増加（推測）',
+                            data: interpolatedViewsData,
+                            backgroundColor: 'rgba(59, 130, 246, 0.4)',
+                            borderColor: '#3b82f6',
+                            borderWidth: 1,
+                            borderDash: [5, 5]
+                        },
+                        {
+                            label: 'コメント数増加',
+                            data: commentsData,
+                            backgroundColor: '#10b981',
+                            borderColor: '#047857',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'スキ数増加',
+                            data: likesData,
+                            backgroundColor: '#f59e0b',
+                            borderColor: '#d97706',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                afterLabel: function(context) {
+                                    const index = context.dataIndex;
+                                    if (dailyIncrements[index] && !dailyIncrements[index].isActual) {
+                                        return '※推測値';
+                                    }
+                                    return '';
+                                }
+                            }
+                        }
+                    }
                 }
             });
         }
