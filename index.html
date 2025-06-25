@@ -187,6 +187,10 @@
             padding: 20px;
         }
         
+        .dashboard .chart-container {
+            grid-column: 1 / -1;  /* 両方のグラフが全幅を使用 */
+        }
+        
         .card {
             background: #fff;
             padding: 20px;
@@ -1372,6 +1376,9 @@
             // まずカテゴリ一覧のみ更新
             updateCategoryList();
             
+            // 個別記事分析のタブ初期化
+            switchIndividualChart('cumulative');
+            
             // GitHub設定の復元を最優先で実行
             const savedConfig = localStorage.getItem('githubConfig');
             if (savedConfig) {
@@ -2248,7 +2255,18 @@
 
         function updateIndividualAnalysis() {
             const selectedId = document.getElementById('articleSelect').value;
-            if (!selectedId) return;
+            if (!selectedId) {
+                // 記事が選択されていない場合、チャートをクリア
+                document.getElementById('selectedArticleId').textContent = '-';
+                document.getElementById('selectedArticleTitle').textContent = '-';
+                document.getElementById('selectedArticleCategory').textContent = '-';
+                document.getElementById('selectedArticleDate').textContent = '-';
+                document.getElementById('latestViews').textContent = '-';
+                document.getElementById('latestComments').textContent = '-';
+                document.getElementById('latestLikes').textContent = '-';
+                document.getElementById('avgGrowthRate').textContent = '-';
+                return;
+            }
 
             const article = masterData.find(a => a.id === selectedId);
             const articleData = dailyData.filter(d => d.articleId === selectedId);
@@ -2297,7 +2315,7 @@
                 document.getElementById('cumulativeTab').classList.add('active');
                 document.getElementById('individualChart').style.display = 'block';
                 document.getElementById('individualDailyChart').style.display = 'none';
-            } else {
+            } else if (chartType === 'daily') {
                 document.getElementById('dailyTab').classList.add('active');
                 document.getElementById('individualChart').style.display = 'none';
                 document.getElementById('individualDailyChart').style.display = 'block';
